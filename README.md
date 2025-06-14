@@ -136,8 +136,39 @@ python manage.py seed_dummy_data
 ```bash
 python manage.py runserver
 ```
+7. To create users/admins/host:
+   Navigate to folder and than - ```bash python manage.py shell```
+   Paste the following there(Depending on the requirement)-
+   from accounts.models import CustomUser
 
-7. Access the application at http://127.0.0.1:8000/
+# Create a regular customer
+customer = CustomUser.objects.create_user(
+    username='customer1',
+    email='customer1@example.com',
+    password='your_password',
+    user_type='customer',
+    phone_number='1234567890'
+)
+
+# Create a host
+host = CustomUser.objects.create_user(
+    username='host1',
+    email='host1@example.com',
+    password='your_password',
+    user_type='host',
+    phone_number='9876543210'
+)
+
+# Create an admin
+admin = CustomUser.objects.create_user(
+    username='admin1',
+    email='admin1@example.com',
+    password='your_password',
+    user_type='admin',
+    phone_number='5555555555'
+)
+
+8. Access the application at http://127.0.0.1:8000/
 
 ## Demo Accounts
 
