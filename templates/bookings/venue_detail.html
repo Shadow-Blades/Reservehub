@@ -1,0 +1,276 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ venue.name }} - ReserveHub{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Venue Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1>{{ venue.name }}</h1>
+            <p class="text-muted">
+                <i class="fas fa-map-marker-alt me-1"></i> {{ venue.address }}, {{ venue.city }}, {{ venue.state }} {{ venue.postal_code }}
+            </p>
+            <div class="d-flex align-items-center mb-2">
+                <div class="me-3">
+                    <span class="badge bg-primary rounded-pill">
+                        <i class="fas fa-star me-1"></i> {{ venue.average_rating|floatformat:1 }}
+                    </span>
+                </div>
+                <a href="#reviews" class="text-decoration-none">{{ venue.reviews.count }} reviews</a>
+                <span class="mx-2">•</span>
+                <span><i class="fas fa-users me-1"></i> Up to {{ venue.max_capacity }} people</span>
+            </div>
+            <p>{{ venue.description }}</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="#" class="btn btn-outline-danger favorite-toggle me-2" data-venue-id="{{ venue.id }}">
+                <i class="{% if is_favorite %}fas{% else %}far{% endif %} fa-heart"></i>
+                {% if is_favorite %}Remove from Favorites{% else %}Add to Favorites{% endif %}
+            </a>
+            <a href="#rooms" class="btn btn-primary">Book Now</a>
+        </div>
+    </div>
+    
+    <!-- Venue Images -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body p-0">
+                    <div id="venueCarousel" class="carousel slide" data-bs-ride="carousel">
+                        <div class="carousel-indicators">
+                            {% for image in venue.images.all %}
+                                <button type="button" data-bs-target="#venueCarousel" data-bs-slide-to="{{ forloop.counter0 }}" {% if forloop.first %}class="active"{% endif %} aria-label="Slide {{ forloop.counter }}"></button>
+                            {% empty %}
+                                <button type="button" data-bs-target="#venueCarousel" data-bs-slide-to="0" class="active" aria-label="Slide 1"></button>
+                            {% endfor %}
+                        </div>
+                        <div class="carousel-inner">
+                            {% for image in venue.images.all %}
+                                <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                                    <img src="{{ image.image.url }}" class="d-block w-100" alt="{{ image.caption|default:venue.name }}" style="height: 500px; object-fit: cover;">
+                                </div>
+                            {% empty %}
+                                <div class="carousel-item active">
+                                    <img src="{% static 'img/venue-placeholder.svg' %}" class="d-block w-100" alt="{{ venue.name }}" style="height: 500px; object-fit: cover;">
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <button class="carousel-control-prev" type="button" data-bs-target="#venueCarousel" data-bs-slide="prev">
+                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                            <span class="visually-hidden">Previous</span>
+                        </button>
+                        <button class="carousel-control-next" type="button" data-bs-target="#venueCarousel" data-bs-slide="next">
+                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                            <span class="visually-hidden">Next</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Venue Features -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <h2 class="mb-4">Features & Amenities</h2>
+        </div>
+        {% for amenity in venue.amenities.all %}
+            <div class="col-md-3 col-6 mb-3">
+                <div class="d-flex align-items-center">
+                    <i class="{{ amenity.icon|default:'fas fa-check-circle' }} fa-lg text-success me-2"></i>
+                    <span>{{ amenity.name }}</span>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12">
+                <p class="text-muted">No amenities listed for this venue.</p>
+            </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Available Rooms -->
+    <div class="row mb-5" id="rooms">
+        <div class="col-12">
+            <h2 class="mb-4">Available Spaces</h2>
+        </div>
+        
+        {% for room in venue.rooms.all %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <div class="position-relative">
+                        {% if room.images.exists %}
+                            <img src="{{ room.images.first.image.url }}" class="card-img-top" alt="{{ room.name }}" style="height: 200px; object-fit: cover;">
+                        {% else %}
+                            <img src="{% static 'img/venue-placeholder.svg' %}" class="card-img-top" alt="{{ room.name }}" style="height: 200px; object-fit: cover;">
+                        {% endif %}
+                        <div class="venue-price">${{ room.price_per_hour }}/hr</div>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">{{ room.name }}</h5>
+                        <p class="card-text"><i class="fas fa-users me-1"></i> Up to {{ room.capacity }} people</p>
+                        <p class="card-text">{{ room.description|truncatechars:100 }}</p>
+                    </div>
+                    <div class="card-footer bg-white border-0">
+                        <a href="{% url 'bookings:booking_create' room.id %}" class="btn btn-primary w-100">Book This Space</a>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <h4 class="alert-heading">No Rooms Available</h4>
+                    <p>There are currently no rooms or spaces available for booking at this venue.</p>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Reviews Section -->
+    <div class="row mb-5" id="reviews">
+        <div class="col-12">
+            <h2 class="mb-4">Reviews & Ratings</h2>
+        </div>
+        
+        <!-- Review Summary -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="display-4 text-center">{{ venue.average_rating|floatformat:1 }}</h3>
+                    <div class="text-center mb-3">
+                        {% with ''|center:5 as range %}
+                            {% for _ in range %}
+                                <i class="{% if forloop.counter <= venue.average_rating %}fas{% else %}far{% endif %} fa-star text-warning"></i>
+                            {% endfor %}
+                        {% endwith %}
+                    </div>
+                    <p class="text-center text-muted">Based on {{ venue.reviews.count }} reviews</p>
+                    
+                    {% if user.is_authenticated and can_review %}
+                        <div class="d-grid">
+                            <a href="{% url 'bookings:review_create' venue.id %}" class="btn btn-outline-primary">Write a Review</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Review List -->
+        <div class="col-md-8">
+            {% for review in reviews %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="d-flex align-items-center">
+                                <div class="me-3">
+                                    {% if review.user.profile_image %}
+                                        <img src="{{ review.user.profile_image.url }}" class="rounded-circle user-image" alt="{{ review.user.get_full_name }}">
+                                    {% else %}
+                                        <div class="rounded-circle bg-primary text-white user-image d-flex align-items-center justify-content-center">
+                                            <span>{{ review.user.get_full_name|default:review.user.email|first|upper }}</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">{{ review.user.get_full_name|default:review.user.email }}</h6>
+                                    <small class="text-muted">{{ review.created_at|date:"F j, Y" }}</small>
+                                </div>
+                            </div>
+                            <div class="star-rating">
+                                {% with ''|center:review.rating as range %}
+                                    {% for _ in range %}
+                                        <i class="fas fa-star"></i>
+                                    {% endfor %}
+                                {% endwith %}
+                                {% with ''|center:5|slice:review.rating as range %}
+                                    {% for _ in range %}
+                                        <i class="far fa-star"></i>
+                                    {% endfor %}
+                                {% endwith %}
+                            </div>
+                        </div>
+                        <p class="card-text">{{ review.comment }}</p>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="alert alert-info">
+                    <p class="mb-0">No reviews yet. Be the first to review this venue!</p>
+                </div>
+            {% endfor %}
+            
+            <!-- Pagination for reviews -->
+            {% if reviews.paginator.num_pages > 1 %}
+                <nav aria-label="Review pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if reviews.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?review_page=1#reviews" aria-label="First">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for p in reviews.paginator.page_range %}
+                            {% if p == reviews.number %}
+                                <li class="page-item active"><span class="page-link">{{ p }}</span></li>
+                            {% elif p > reviews.number|add:'-3' and p < reviews.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?review_page={{ p }}#reviews">{{ p }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if reviews.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?review_page={{ reviews.paginator.num_pages }}#reviews" aria-label="Last">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Location Map -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <h2 class="mb-4">Location</h2>
+        </div>
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body p-0">
+                    {% if venue.latitude and venue.longitude %}
+                        <div id="venue-map" style="height: 400px;"></div>
+                        <script>
+                            document.addEventListener('DOMContentLoaded', function() {
+                                if (typeof google !== 'undefined') {
+                                    var venueLocation = {
+                                        lat: parseFloat("{{ venue.latitude }}"),
+                                        lng: parseFloat("{{ venue.longitude }}")
+                                    };
+                                    
+                                    var map = new google.maps.Map(document.getElementById('venue-map'), {
+                                        zoom: 15,
+                                        center: venueLocation
+                                    });
+                                    
+                                    var marker = new google.maps.Marker({
+                                        position: venueLocation,
+                                        map: map,
+                                        title: "{{ venue.name }}"
+                                    });
+                                }
+                            });
+                        </script>
+                    {% else %}
+                        <img src="https://maps.googleapis.com/maps/api/staticmap?center={{ venue.address|urlencode }},{{ venue.city|urlencode }},{{ venue.state|urlencode }}&zoom=15&size=1200x400&markers=color:red|{{ venue.address|urlencode }},{{ venue.city|urlencode }},{{ venue.state|urlencode }}&key=" class="img-fluid w-100" alt="Location map">
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

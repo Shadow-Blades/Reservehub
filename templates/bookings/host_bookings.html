@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Booking Requests - Host Dashboard - ReserveHub{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1>Booking Requests</h1>
+            <p class="text-muted">Manage bookings for your venues</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'bookings:host_venues' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-building me-1"></i> My Venues
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">Bookings</h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if bookings %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Booking ID</th>
+                                        <th>Venue/Room</th>
+                                        <th>Customer</th>
+                                        <th>Date & Time</th>
+                                        <th>Status</th>
+                                        <th>Amount</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for booking in bookings %}
+                                        <tr>
+                                            <td>{{ booking.booking_id|truncatechars:8 }}</td>
+                                            <td>
+                                                <div>
+                                                    <strong>{{ booking.room.venue.name }}</strong><br>
+                                                    <small class="text-muted">{{ booking.room.name }}</small>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                {{ booking.user.email }}<br>
+                                                <small class="text-muted">{{ booking.user.phone_number|default:"No phone" }}</small>
+                                            </td>
+                                            <td>
+                                                {{ booking.start_time|date:"M d, Y" }}<br>
+                                                <small class="text-muted">{{ booking.start_time|time:"g:i A" }} - {{ booking.end_time|time:"g:i A" }}</small>
+                                            </td>
+                                            <td>
+                                                {% if booking.status == 'pending' %}
+                                                    <span class="badge bg-warning">Pending</span>
+                                                {% elif booking.status == 'confirmed' %}
+                                                    <span class="badge bg-success">Confirmed</span>
+                                                {% elif booking.status == 'completed' %}
+                                                    <span class="badge bg-info">Completed</span>
+                                                {% elif booking.status == 'cancelled' %}
+                                                    <span class="badge bg-danger">Cancelled</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>₹{{ booking.total_price }}</td>
+                                            <td>
+                                                <div class="btn-group">
+                                                    {% if booking.status == 'pending' %}
+                                                        <a href="{% url 'bookings:confirm_booking' booking.booking_id %}" class="btn btn-sm btn-success" title="Confirm">
+                                                            <i class="fas fa-check"></i>
+                                                        </a>
+                                                    {% endif %}
+                                                    <a href="{% url 'bookings:booking_detail' booking.booking_id %}" class="btn btn-sm btn-primary" title="View">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-calendar-check fa-3x text-muted mb-3"></i>
+                            <h4>No Bookings Yet</h4>
+                            <p class="text-muted">You don't have any bookings for your venues yet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if is_paginated %}
+        <nav aria-label="Page navigation" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1" aria-label="First">
+                            <span aria-hidden="true">&laquo;&laquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                {% endif %}
+
+                {% for num in paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ paginator.num_pages }}" aria-label="Last">
+                            <span aria-hidden="true">&raquo;&raquo;</span>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+</div>
+{% endblock %} 

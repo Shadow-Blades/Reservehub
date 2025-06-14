@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}ReserveHub - Venue Booking Platform{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="jumbotron text-center">
+        <h1 class="display-4">Welcome to ReserveHub</h1>
+        <p class="lead">Find and book the perfect venue for your event</p>
+        <hr class="my-4">
+        <p>Browse hotels, restaurants, and other venues with our easy-to-use platform.</p>
+        <a class="btn btn-primary btn-lg" href="{% url 'bookings:venue_list' %}" role="button">Browse Venues</a>
+    </div>
+    
+    <div class="row mt-5">
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    <i class="fas fa-hotel fa-3x mb-3 text-primary"></i>
+                    <h3 class="card-title">Hotels</h3>
+                    <p class="card-text">Find comfortable hotels for your stay.</p>
+                    <a href="{% url 'bookings:venue_list' %}?type=hotel" class="btn btn-outline-primary">View Hotels</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    <i class="fas fa-utensils fa-3x mb-3 text-danger"></i>
+                    <h3 class="card-title">Restaurants</h3>
+                    <p class="card-text">Discover restaurants perfect for your events.</p>
+                    <a href="{% url 'bookings:venue_list' %}?type=restaurant" class="btn btn-outline-danger">View Restaurants</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    <i class="fas fa-glass-cheers fa-3x mb-3 text-success"></i>
+                    <h3 class="card-title">Event Spaces</h3>
+                    <p class="card-text">Book special venues for celebrations.</p>
+                    <a href="{% url 'bookings:venue_list' %}?type=event_space" class="btn btn-outline-success">View Event Spaces</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

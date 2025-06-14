@@ -1,0 +1,332 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Host Dashboard - ReserveHub{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stats-card {
+        transition: all 0.3s;
+    }
+    .stats-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    .chart-container {
+        height: 300px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1>Host Dashboard</h1>
+            <p class="text-muted">Your venues and booking statistics</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'bookings:venue_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus-circle me-1"></i> Add New Venue
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Overview -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card stats-card bg-primary text-white h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Total Bookings</h5>
+                    <h2 class="display-4">{{ total_bookings }}</h2>
+                    <p class="card-text">Across all venues</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card stats-card bg-success text-white h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Your Earnings</h5>
+                    <h2 class="display-4">₹{{ owner_earnings }}</h2>
+                    <p class="card-text">90% of all bookings</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card stats-card bg-info text-white h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Pending Earnings</h5>
+                    <h2 class="display-4">₹{{ pending_earnings }}</h2>
+                    <p class="card-text">To be received</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card stats-card bg-warning text-white h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Avg. Rating</h5>
+                    <h2 class="display-4">{{ avg_rating|floatformat:1 }}</h2>
+                    <p class="card-text">From {{ total_reviews }} reviews</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <!-- Monthly Revenue Chart -->
+        <div class="col-md-7 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Monthly Revenue</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Venue Popularity Chart -->
+        <div class="col-md-5 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Venue Popularity</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="venuePopularityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Recent Bookings -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Recent Bookings</h5>
+                    <a href="{% url 'bookings:host_bookings' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Venue</th>
+                                    <th>Customer</th>
+                                    <th>Date</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for booking in recent_bookings %}
+                                <tr>
+                                    <td>{{ booking.room.venue.name }}</td>
+                                    <td>{{ booking.user.email }}</td>
+                                    <td>{{ booking.start_time|date:"M d, Y" }}</td>
+                                    <td>₹{{ booking.total_price }}</td>
+                                    <td><span class="badge bg-{{ booking.status_color }}">{{ booking.status }}</span></td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center">No recent bookings found</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Earnings -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Recent Earnings</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Venue</th>
+                                    <th>Booking Date</th>
+                                    <th>Your Share (90%)</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for earning in recent_earnings %}
+                                <tr>
+                                    <td>{{ earning.transaction.booking.room.venue.name }}</td>
+                                    <td>{{ earning.transaction.created_at|date:"M d, Y" }}</td>
+                                    <td>₹{{ earning.owner_amount }}</td>
+                                    <td>
+                                        {% if earning.is_paid_to_owner %}
+                                        <span class="badge bg-success">Received</span>
+                                        {% else %}
+                                        <span class="badge bg-warning">Pending</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center">No earnings records found</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Venues Overview -->
+        <div class="col-md-12 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Your Venues</h5>
+                    <a href="{% url 'bookings:host_venues' %}" class="btn btn-sm btn-outline-primary">Manage Venues</a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th>Rooms</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for venue in venues %}
+                                <tr>
+                                    <td>{{ venue.name }}</td>
+                                    <td>{{ venue.venue_type }}</td>
+                                    <td>{{ venue.room_count }}</td>
+                                    <td>
+                                        {% if venue.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'bookings:venue_update' venue.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center">No venues found. <a href="{% url 'bookings:venue_create' %}">Create one</a>!</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden data elements for charts -->
+<div id="chartData" data-revenue="{{ monthly_revenue_data }}" data-venues="{{ venue_popularity_data }}"></div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Parse data from data attributes
+        const chartDataElement = document.getElementById('chartData');
+        
+        // Monthly Revenue Chart
+        const revenueData = JSON.parse(chartDataElement.getAttribute('data-revenue'));
+        const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+        new Chart(revenueCtx, {
+            type: 'bar',
+            data: {
+                labels: revenueData.labels,
+                datasets: [
+                    {
+                        label: 'Total Booking Revenue (₹)',
+                        data: revenueData.total_data,
+                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Your Earnings (90%)',
+                        data: revenueData.owner_data,
+                        backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '₹' + value;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Venue Popularity Chart
+        const venueData = JSON.parse(chartDataElement.getAttribute('data-venues'));
+        const venueCtx = document.getElementById('venuePopularityChart').getContext('2d');
+        new Chart(venueCtx, {
+            type: 'pie',
+            data: {
+                labels: venueData.labels,
+                datasets: [{
+                    data: venueData.data,
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.7)',
+                        'rgba(54, 162, 235, 0.7)',
+                        'rgba(255, 206, 86, 0.7)',
+                        'rgba(75, 192, 192, 0.7)',
+                        'rgba(153, 102, 255, 0.7)',
+                        'rgba(255, 159, 64, 0.7)',
+                        'rgba(199, 199, 199, 0.7)',
+                        'rgba(83, 102, 255, 0.7)',
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)',
+                        'rgba(255, 159, 64, 1)',
+                        'rgba(199, 199, 199, 1)',
+                        'rgba(83, 102, 255, 1)',
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+            }
+        });
+    });
+</script>
+{% endblock %} 

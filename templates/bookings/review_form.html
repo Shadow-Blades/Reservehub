@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}Leave a Review - ReserveHub{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h1 class="h4 mb-0">Leave a Review for {{ venue.name }}</h1>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label class="form-label">Rating</label>
+                            <div class="rating-stars mb-3">
+                                <div class="d-flex">
+                                    {% for i in "12345" %}
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input visually-hidden" type="radio" name="rating" id="rating{{ i }}" value="{{ i }}" {% if form.rating.value == i %}checked{% endif %} required>
+                                        <label class="form-check-label star-label" for="rating{{ i }}">
+                                            <i class="far fa-star fs-2"></i>
+                                            <i class="fas fa-star fs-2 filled"></i>
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {{ form.comment|as_crispy_field }}
+                        
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'bookings:user_bookings' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-1"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane me-1"></i> Submit Review
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .rating-stars .form-check {
+        margin-right: 0.5rem;
+    }
+    
+    .star-label {
+        cursor: pointer;
+        color: #ccc;
+        position: relative;
+    }
+    
+    .star-label .filled {
+        position: absolute;
+        top: 0;
+        left: 0;
+        color: #ffc107;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+    
+    .form-check-input:checked + .star-label .filled,
+    .form-check-input:hover + .star-label .filled {
+        opacity: 1;
+    }
+    
+    /* Show filled stars for all previous ratings when hovering */
+    .form-check:hover .star-label .filled,
+    .form-check:hover ~ .form-check .star-label .filled {
+        opacity: 1;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize star ratings
+        const ratingInputs = document.querySelectorAll('input[name="rating"]');
+        const starLabels = document.querySelectorAll('.star-label');
+        
+        // Handle hover effects
+        starLabels.forEach((label, index) => {
+            label.addEventListener('mouseenter', () => {
+                // Fill stars up to current
+                for (let i = 0; i <= index; i++) {
+                    starLabels[i].querySelector('.filled').style.opacity = '1';
+                }
+                
+                // Empty stars after current
+                for (let i = index + 1; i < starLabels.length; i++) {
+                    starLabels[i].querySelector('.filled').style.opacity = '0';
+                }
+            });
+        });
+        
+        // Reset to selected state on mouseleave
+        document.querySelector('.rating-stars').addEventListener('mouseleave', () => {
+            starLabels.forEach((label, index) => {
+                const input = ratingInputs[index];
+                if (input.checked) {
+                    label.querySelector('.filled').style.opacity = '1';
+                } else {
+                    label.querySelector('.filled').style.opacity = '0';
+                }
+            });
+        });
+    });
+</script>
+{% endblock %} 

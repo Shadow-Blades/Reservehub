@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load account %}
+
+{% block title %}{% trans "Sign In" %} - ReserveHub{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+      <div class="card shadow">
+        <div class="card-header bg-dark text-white">
+          <h2 class="h4 mb-0 text-center">{% trans "Sign In" %}</h2>
+        </div>
+        <div class="card-body p-4">
+          
+          <!-- Login Credentials -->
+          <div class="alert alert-info mb-4">
+            <p class="mb-1"><strong>Testing credentials:</strong></p>
+            <p class="mb-0">Username: <code>testuser</code> Password: <code>testpassword</code></p>
+          </div>
+          
+          <form class="login" method="POST" action="{% url 'accounts:login' %}">
+            {% csrf_token %}
+            
+            {% if form.errors %}
+            <div class="alert alert-danger">
+              <p class="mb-0"><strong>{% trans "Please correct the errors below:" %}</strong></p>
+              {% for field in form %}
+                {% if field.errors %}
+                <div class="mt-1">{{ field.label }}: {{ field.errors|join:", " }}</div>
+                {% endif %}
+              {% endfor %}
+              {% if form.non_field_errors %}
+                {% for error in form.non_field_errors %}
+                  <div class="mt-1">{{ error }}</div>
+                {% endfor %}
+              {% endif %}
+            </div>
+            {% endif %}
+            
+            <div class="mb-3">
+              <label for="id_username" class="form-label">{% trans "Username or Email" %}:</label>
+              <input type="text" name="username" placeholder="{% trans 'Username or Email address' %}" class="form-control" required id="id_username">
+            </div>
+            
+            <div class="mb-3">
+              <label for="id_password" class="form-label">{% trans "Password" %}:</label>
+              <input type="password" name="password" placeholder="{% trans 'Password' %}" autocomplete="current-password" class="form-control" required id="id_password">
+            </div>
+            
+            <div class="mb-4 form-check">
+              <input type="checkbox" name="remember" class="form-check-input" id="id_remember">
+              <label class="form-check-label" for="id_remember">{% trans "Remember Me" %}</label>
+            </div>
+            
+            {% if redirect_field_value %}
+            <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+            {% endif %}
+            
+            <div class="d-grid gap-2">
+              <button class="btn btn-primary" type="submit">{% trans "Sign In" %}</button>
+            </div>
+            
+            <div class="mt-4 text-center">
+              <p class="mb-1"><a href="{% url 'accounts:password_reset' %}">{% trans "Forgot Password?" %}</a></p>
+              <p class="mb-0">{% trans "Don't have an account?" %} <a href="{% url 'accounts:signup' %}" class="fw-semibold">{% trans "Sign up here" %}</a></p>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} 

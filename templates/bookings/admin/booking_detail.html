@@ -1,0 +1,310 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Booking #{{ booking.booking_id|truncatechars:8 }} - Admin View{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'admin:index' %}">Admin Dashboard</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Booking #{{ booking.booking_id|truncatechars:8 }}</li>
+        </ol>
+    </nav>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+    
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Booking Details (Admin View)</h5>
+                    <span class="badge {% if booking.status == 'confirmed' %}bg-success{% elif booking.status == 'pending' %}bg-warning text-dark{% elif booking.status == 'cancelled' %}bg-danger{% else %}bg-info{% endif %}">{{ booking.status|title }}</span>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6 mb-3">
+                            <div class="mb-2">
+                                <strong>Booking ID:</strong>
+                                <p class="text-muted">{{ booking.booking_id }}</p>
+                            </div>
+                            <div class="mb-2">
+                                <strong>Status:</strong>
+                                <p class="mb-0 {% if booking.status == 'confirmed' %}text-success{% elif booking.status == 'pending' %}text-warning{% elif booking.status == 'cancelled' %}text-danger{% endif %}">{{ booking.status|title }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="mb-2">
+                                <strong>Booked On:</strong>
+                                <p class="text-muted">{{ booking.created_at|date:"F j, Y, g:i a" }}</p>
+                            </div>
+                            <div class="mb-2">
+                                <strong>Last Updated:</strong>
+                                <p class="text-muted">{{ booking.updated_at|date:"F j, Y, g:i a" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h5>User Information</h5>
+                    <div class="row mb-4">
+                        <div class="col-md-6 mb-3">
+                            <div class="mb-2">
+                                <strong>User:</strong>
+                                <p>{{ booking.user.get_full_name|default:booking.user.email }}</p>
+                            </div>
+                            <div class="mb-2">
+                                <strong>Email:</strong>
+                                <p>{{ booking.user.email }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="mb-2">
+                                <strong>Phone:</strong>
+                                <p>{{ booking.user.phone|default:"Not provided" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h5>Venue Information</h5>
+                    <div class="row mb-4">
+                        <div class="col-md-6 mb-3">
+                            <div class="mb-2">
+                                <strong>Venue:</strong>
+                                <p><a href="{% url 'bookings:venue_detail' booking.room.venue.id %}">{{ booking.room.venue.name }}</a></p>
+                            </div>
+                            <div class="mb-2">
+                                <strong>Room/Space:</strong>
+                                <p>{{ booking.room.name }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="mb-2">
+                                <strong>Address:</strong>
+                                <p>{{ booking.room.venue.address }}, {{ booking.room.venue.city }}</p>
+                            </div>
+                            <div class="mb-2">
+                                <strong>Owner:</strong>
+                                <p>{{ booking.room.venue.owner.get_full_name|default:booking.room.venue.owner.email }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h5>Booking Information</h5>
+                    <div class="row mb-4">
+                        <div class="col-md-6 mb-3">
+                            <div class="mb-2">
+                                <strong>Date:</strong>
+                                <p>{{ booking.start_time|date:"F j, Y" }}</p>
+                            </div>
+                            <div class="mb-2">
+                                <strong>Time:</strong>
+                                <p>{{ booking.start_time|date:"g:i a" }} - {{ booking.end_time|date:"g:i a" }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="mb-2">
+                                <strong>Duration:</strong>
+                                <p>{{ booking.duration_hours|floatformat:1 }} hours</p>
+                            </div>
+                            <div class="mb-2">
+                                <strong>Number of Guests:</strong>
+                                <p>{{ booking.num_guests }} people</p>
+                            </div>
+                        </div>
+                        <div class="col-12 mb-3">
+                            <div class="mb-2">
+                                <strong>Special Requests:</strong>
+                                <p>{% if booking.special_requests %}{{ booking.special_requests }}{% else %}None{% endif %}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title">Payment Information</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Price per hour:</span>
+                                        <span>₹{{ booking.room.price_per_hour }}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Duration:</span>
+                                        <span>{{ booking.duration_hours|floatformat:1 }} hours</span>
+                                    </div>
+                                    <hr>
+                                    <div class="d-flex justify-content-between">
+                                        <span class="fw-bold">Total Paid:</span>
+                                        <span class="fw-bold">₹{{ booking.total_price }}</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="d-flex justify-content-center">
+                                        <img src="{% static 'img/coin.svg' %}" alt="Coins" style="height: 50px; width: auto;">
+                                    </div>
+                                    <p class="text-center mt-2">Payment made using ReserveHub coins</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        {% if booking.status == 'pending' %}
+                            <form method="post" action="{% url 'bookings:confirm_booking' booking.booking_id %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-check-circle me-1"></i> Confirm Booking
+                                </button>
+                            </form>
+                        {% endif %}
+                        
+                        {% if booking.status != 'cancelled' %}
+                            <form method="post" action="{% url 'bookings:cancel_booking' booking.booking_id %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-danger" onclick="return confirm('Are you sure you want to cancel this booking?')">
+                                    <i class="fas fa-times-circle me-1"></i> Cancel Booking
+                                </button>
+                            </form>
+                        {% endif %}
+                        
+                        <a href="{% url 'admin:index' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i> Back to Admin Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">Admin Actions</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <a href="#" class="text-decoration-none" onclick="window.print()">
+                                <i class="fas fa-print me-1"></i> Print Receipt
+                            </a>
+                        </li>
+                        <li class="list-group-item">
+                            <a href="#" class="text-decoration-none" onclick="downloadReceipt()">
+                                <i class="fas fa-download me-1"></i> Download Receipt
+                            </a>
+                        </li>
+                        <li class="list-group-item">
+                            <a href="{% url 'admin:bookings_booking_change' booking.id %}" class="text-decoration-none">
+                                <i class="fas fa-edit me-1"></i> Edit Booking
+                            </a>
+                        </li>
+                        <li class="list-group-item">
+                            <a href="{% url 'admin:bookings_booking_delete' booking.id %}" class="text-decoration-none text-danger">
+                                <i class="fas fa-trash me-1"></i> Delete Booking
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">Quick Links</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <a href="{% url 'bookings:venue_detail' booking.room.venue.id %}" class="text-decoration-none">
+                                <i class="fas fa-building me-1"></i> View Venue
+                            </a>
+                        </li>
+                        <li class="list-group-item">
+                            <a href="{% url 'admin:accounts_user_change' booking.user.id %}" class="text-decoration-none">
+                                <i class="fas fa-user me-1"></i> View User Profile
+                            </a>
+                        </li>
+                        <li class="list-group-item">
+                            <a href="{% url 'admin:bookings_venue_change' booking.room.venue.id %}" class="text-decoration-none">
+                                <i class="fas fa-edit me-1"></i> Edit Venue
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function downloadReceipt() {
+    // Create a new window for printing
+    const printWindow = window.open('', '_blank');
+    
+    // Get the booking details
+    const bookingDetails = {
+        bookingId: '{{ booking.booking_id }}',
+        date: '{{ booking.start_time|date:"F j, Y" }}',
+        time: '{{ booking.start_time|date:"g:i a" }} - {{ booking.end_time|date:"g:i a" }}',
+        venue: '{{ booking.room.venue.name }}',
+        room: '{{ booking.room.name }}',
+        price: '₹{{ booking.total_price }}',
+        status: '{{ booking.status|title }}'
+    };
+    
+    // Create the receipt HTML
+    const receiptHTML = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Booking Receipt - ${bookingDetails.bookingId}</title>
+            <style>
+                body { font-family: Arial, sans-serif; padding: 20px; }
+                .receipt { max-width: 800px; margin: 0 auto; }
+                .header { text-align: center; margin-bottom: 30px; }
+                .details { margin-bottom: 20px; }
+                .footer { text-align: center; margin-top: 30px; font-size: 12px; }
+                .status { color: ${bookingDetails.status === 'Confirmed' ? 'green' : 'orange'}; }
+            </style>
+        </head>
+        <body>
+            <div class="receipt">
+                <div class="header">
+                    <h1>ReserveHub</h1>
+                    <h2>Booking Receipt</h2>
+                </div>
+                <div class="details">
+                    <p><strong>Booking ID:</strong> ${bookingDetails.bookingId}</p>
+                    <p><strong>Date:</strong> ${bookingDetails.date}</p>
+                    <p><strong>Time:</strong> ${bookingDetails.time}</p>
+                    <p><strong>Venue:</strong> ${bookingDetails.venue}</p>
+                    <p><strong>Room:</strong> ${bookingDetails.room}</p>
+                    <p><strong>Total Amount:</strong> ${bookingDetails.price}</p>
+                    <p><strong>Status:</strong> <span class="status">${bookingDetails.status}</span></p>
+                </div>
+                <div class="footer">
+                    <p>This is a computer-generated receipt and does not require a signature.</p>
+                    <p>Thank you for using ReserveHub!</p>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+    
+    // Write the receipt to the new window
+    printWindow.document.write(receiptHTML);
+    printWindow.document.close();
+    
+    // Wait for the content to load
+    printWindow.onload = function() {
+        // Print the receipt
+        printWindow.print();
+    };
+}
+</script>
+{% endblock %} 

@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Browse Venues - ReserveHub{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <!-- Filter Sidebar -->
+        <div class="col-md-3">
+            <div class="card mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">Filter Venues</h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" action="{% url 'bookings:venue_list' %}">
+                        <!-- Venue Type -->
+                        <div class="mb-3">
+                            <h6>Venue Type</h6>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="type" id="type_all" value="" {% if not request.GET.type %}checked{% endif %}>
+                                <label class="form-check-label" for="type_all">All Types</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="type" id="type_hotel" value="hotel" {% if request.GET.type == 'hotel' %}checked{% endif %}>
+                                <label class="form-check-label" for="type_hotel">Hotels</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="type" id="type_restaurant" value="restaurant" {% if request.GET.type == 'restaurant' %}checked{% endif %}>
+                                <label class="form-check-label" for="type_restaurant">Restaurants</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="type" id="type_event_space" value="event_space" {% if request.GET.type == 'event_space' %}checked{% endif %}>
+                                <label class="form-check-label" for="type_event_space">Event Spaces</label>
+                            </div>
+                        </div>
+                        
+                        <!-- Amenities -->
+                        <div class="mb-3">
+                            <h6>Amenities</h6>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="amenities" id="wifi" value="wifi" {% if 'wifi' in request.GET.amenities %}checked{% endif %}>
+                                <label class="form-check-label" for="wifi">WiFi</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="amenities" id="gym" value="gym" {% if 'gym' in request.GET.amenities %}checked{% endif %}>
+                                <label class="form-check-label" for="gym">Gym/Fitness Center</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="amenities" id="swimming_pool" value="swimming_pool" {% if 'swimming_pool' in request.GET.amenities %}checked{% endif %}>
+                                <label class="form-check-label" for="swimming_pool">Swimming Pool</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="amenities" id="parking" value="parking" {% if 'parking' in request.GET.amenities %}checked{% endif %}>
+                                <label class="form-check-label" for="parking">Parking</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="amenities" id="restaurant" value="restaurant" {% if 'restaurant' in request.GET.amenities %}checked{% endif %}>
+                                <label class="form-check-label" for="restaurant">Restaurant</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="amenities" id="ac" value="ac" {% if 'ac' in request.GET.amenities %}checked{% endif %}>
+                                <label class="form-check-label" for="ac">Air Conditioning</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="amenities" id="spa" value="spa" {% if 'spa' in request.GET.amenities %}checked{% endif %}>
+                                <label class="form-check-label" for="spa">Spa</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="amenities" id="room_service" value="room_service" {% if 'room_service' in request.GET.amenities %}checked{% endif %}>
+                                <label class="form-check-label" for="room_service">Room Service</label>
+                            </div>
+                        </div>
+                        
+                        <!-- Price Range -->
+                        <div class="mb-3">
+                            <h6>Price Range</h6>
+                            <select class="form-select" name="price_range">
+                                <option value="" {% if not request.GET.price_range %}selected{% endif %}>Any Price</option>
+                                <option value="0-1000" {% if request.GET.price_range == '0-1000' %}selected{% endif %}>₹0 - ₹1000</option>
+                                <option value="1000-2000" {% if request.GET.price_range == '1000-2000' %}selected{% endif %}>₹1000 - ₹2000</option>
+                                <option value="2000-5000" {% if request.GET.price_range == '2000-5000' %}selected{% endif %}>₹2000 - ₹5000</option>
+                                <option value="5000+" {% if request.GET.price_range == '5000+' %}selected{% endif %}>₹5000+</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Capacity -->
+                        <div class="mb-3">
+                            <h6>Capacity</h6>
+                            <select class="form-select" name="capacity">
+                                <option value="" {% if not request.GET.capacity %}selected{% endif %}>Any Size</option>
+                                <option value="1-10" {% if request.GET.capacity == '1-10' %}selected{% endif %}>1-10 people</option>
+                                <option value="11-50" {% if request.GET.capacity == '11-50' %}selected{% endif %}>11-50 people</option>
+                                <option value="51-100" {% if request.GET.capacity == '51-100' %}selected{% endif %}>51-100 people</option>
+                                <option value="100+" {% if request.GET.capacity == '100+' %}selected{% endif %}>100+ people</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Rating -->
+                        <div class="mb-3">
+                            <h6>Rating</h6>
+                            <select class="form-select" name="rating">
+                                <option value="" {% if not request.GET.rating %}selected{% endif %}>Any Rating</option>
+                                <option value="4+" {% if request.GET.rating == '4+' %}selected{% endif %}>4+ Stars</option>
+                                <option value="3+" {% if request.GET.rating == '3+' %}selected{% endif %}>3+ Stars</option>
+                                <option value="2+" {% if request.GET.rating == '2+' %}selected{% endif %}>2+ Stars</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Search Button -->
+                        <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Venue List -->
+        <div class="col-md-9">
+            <!-- Top Filter Bar -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>{% if request.GET.type %}{{ request.GET.type|title }} Venues{% else %}All Venues{% endif %}</h2>
+                <div class="d-flex">
+                    <select class="form-select me-2" name="sort" id="sort-select">
+                        <option value="popularity">Sort by: Popularity</option>
+                        <option value="price_low">Price: Low to High</option>
+                        <option value="price_high">Price: High to Low</option>
+                        <option value="rating">Highest Rating</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Venue Cards -->
+            <div class="row">
+                {% if venue_list %}
+                    {% for venue in venue_list %}
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card venue-card h-100">
+                                <div class="position-relative">
+                                    {% if venue.images.exists %}
+                                        <img src="{{ venue.images.first.image.url }}" class="card-img-top" alt="{{ venue.name }}">
+                                    {% else %}
+                                        <img src="{% static 'img/venue-placeholder.svg' %}" class="card-img-top" alt="{{ venue.name }}">
+                                    {% endif %}
+                                    
+                                    <!-- Favorite Button -->
+                                    <a href="#" class="favorite-toggle favorite-icon {% if venue.is_favorite %}active{% endif %}" data-venue-id="{{ venue.id }}">
+                                        <i class="{% if venue.is_favorite %}fas{% else %}far{% endif %} fa-heart"></i>
+                                    </a>
+                                    
+                                    <!-- Price Badge -->
+                                    <div class="venue-price">
+                                        {% if venue.rooms.exists %}
+                                            From ₹{{ venue.rooms.first.price_per_hour|default:"0" }}/hr
+                                        {% else %}
+                                            Price unavailable
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <!-- Rating Badge -->
+                                    <div class="venue-rating">
+                                        <i class="fas fa-star"></i> 
+                                        {% if venue.avg_rating %}
+                                            {{ venue.avg_rating|floatformat:1 }}
+                                        {% else %}
+                                            New
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ venue.name }}</h5>
+                                    <p class="card-text text-muted mb-1"><i class="fas fa-map-marker-alt me-1"></i> {{ venue.city }}, {{ venue.state }}</p>
+                                    <p class="card-text mb-2">
+                                        <small class="text-muted">
+                                            <i class="fas fa-users me-1"></i> Up to {{ venue.max_capacity }} people
+                                        </small>
+                                    </p>
+                                    <p class="card-text">{{ venue.description|truncatechars:100 }}</p>
+                                </div>
+                                <div class="card-footer bg-white border-0">
+                                    <a href="{% url 'bookings:venue_detail' venue.id %}" class="btn btn-primary w-100">View Details</a>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            <h4 class="alert-heading">No Venues Found</h4>
+                            <p>We couldn't find any venues matching your criteria. Try adjusting your filters or search for something else.</p>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Pagination -->
+            {% if is_paginated %}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center mt-4">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page=1" aria-label="First">
+                                    <span aria-hidden="true">&laquo;&laquo;</span>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}" aria-label="Previous">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page={{ num }}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.next_page_number }}" aria-label="Next">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.paginator.num_pages }}" aria-label="Last">
+                                    <span aria-hidden="true">&raquo;&raquo;</span>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

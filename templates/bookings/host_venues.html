@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Venues - Host Dashboard - ReserveHub{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1>My Venues</h1>
+            <p class="text-muted">Manage your venues and rooms</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'bookings:venue_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus-circle me-1"></i> Add New Venue
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">Your Venues</h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if venues %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Type</th>
+                                        <th>Location</th>
+                                        <th>Rooms</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for venue in venues %}
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="venue-icon me-3">
+                                                        {% if venue.images.exists %}
+                                                            <img src="{{ venue.images.first.image.url }}" alt="{{ venue.name }}" class="rounded" width="50" height="50" style="object-fit: cover;">
+                                                        {% else %}
+                                                            <img src="{% static 'img/venue-placeholder.svg' %}" alt="{{ venue.name }}" class="rounded" width="50" height="50">
+                                                        {% endif %}
+                                                    </div>
+                                                    <div>
+                                                        <h6 class="mb-0">{{ venue.name }}</h6>
+                                                        <small class="text-muted">Created: {{ venue.created_at|date:"M d, Y" }}</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>{{ venue.category.name }}</td>
+                                            <td>{{ venue.city }}, {{ venue.state }}</td>
+                                            <td>{{ venue.rooms.count }}</td>
+                                            <td>
+                                                {% if venue.is_active %}
+                                                    <span class="badge bg-success">Active</span>
+                                                {% else %}
+                                                    <span class="badge bg-danger">Inactive</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="btn-group">
+                                                    <a href="{% url 'bookings:venue_detail' venue.id %}" class="btn btn-sm btn-outline-primary" title="View">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    <a href="{% url 'bookings:venue_update' venue.id %}" class="btn btn-sm btn-outline-secondary" title="Edit">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    <a href="{% url 'bookings:room_create' venue.id %}" class="btn btn-sm btn-outline-success" title="Add Room">
+                                                        <i class="fas fa-door-open"></i>
+                                                    </a>
+                                                    <a href="{% url 'bookings:venue_delete' venue.id %}" class="btn btn-sm btn-outline-danger" title="Delete">
+                                                        <i class="fas fa-trash-alt"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-building fa-3x text-muted mb-3"></i>
+                            <h4>No Venues Yet</h4>
+                            <p class="text-muted">You haven't created any venues yet.</p>
+                            <a href="{% url 'bookings:venue_create' %}" class="btn btn-primary">
+                                <i class="fas fa-plus-circle me-1"></i> Add Your First Venue
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if is_paginated %}
+        <nav aria-label="Page navigation" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1" aria-label="First">
+                            <span aria-hidden="true">&laquo;&laquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                {% endif %}
+
+                {% for num in paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ paginator.num_pages }}" aria-label="Last">
+                            <span aria-hidden="true">&raquo;&raquo;</span>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+</div>
+{% endblock %} 

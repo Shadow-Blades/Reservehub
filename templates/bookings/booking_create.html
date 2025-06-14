@@ -1,0 +1,393 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}Book {{ room.name }} - {{ room.venue.name }} - ReserveHub{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'bookings:venue_list' %}">Venues</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'bookings:venue_detail' room.venue.id %}">{{ room.venue.name }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Book {{ room.name }}</li>
+        </ol>
+    </nav>
+    
+    <div class="row">
+        <!-- Room Details -->
+        <div class="col-md-5 mb-4">
+            <div class="card">
+                <div class="position-relative">
+                    {% if room.images.exists %}
+                        <img src="{{ room.images.first.image.url }}" class="card-img-top" alt="{{ room.name }}" style="height: 250px; object-fit: cover;">
+                    {% elif room.venue.images.exists %}
+                        <img src="{{ room.venue.images.first.image.url }}" class="card-img-top" alt="{{ room.name }}" style="height: 250px; object-fit: cover;">
+                    {% else %}
+                        <img src="{% static 'img/venue-placeholder.svg' %}" class="card-img-top" alt="{{ room.name }}" style="height: 250px; object-fit: cover;">
+                    {% endif %}
+                    <div class="venue-price">₹{{ room.price_per_hour }}/hr</div>
+                </div>
+                <div class="card-body">
+                    <h4 class="card-title mb-3">{{ room.name }}</h4>
+                    <p class="card-text"><i class="fas fa-building me-2"></i> {{ room.venue.name }}</p>
+                    <p class="card-text"><i class="fas fa-map-marker-alt me-2"></i> {{ room.venue.address }}, {{ room.venue.city }}</p>
+                    
+                    {% if is_hotel %}
+                    <p class="card-text"><i class="fas fa-bed me-2"></i> Room Number: {{ room.name }}</p>
+                    {% elif is_restaurant %}
+                    <p class="card-text"><i class="fas fa-utensils me-2"></i> Table Number: {{ room.name }}</p>
+                    {% endif %}
+                    
+                    <p class="card-text"><i class="fas fa-users me-2"></i> Capacity: {{ room.capacity }} people</p>
+                    <hr>
+                    <h5>Description</h5>
+                    <p class="card-text">{{ room.description }}</p>
+                    <hr>
+                    <h5>Amenities</h5>
+                    <div class="row">
+                        {% for amenity in room.amenities.all %}
+                            <div class="col-6 mb-2">
+                                <div class="d-flex align-items-center">
+                                    <i class="{{ amenity.icon|default:'fas fa-check-circle' }} fa-sm text-success me-2"></i>
+                                    <span>{{ amenity.name }}</span>
+                                </div>
+                            </div>
+                        {% empty %}
+                            <div class="col-12">
+                                <p class="text-muted">No specific amenities listed for this {{ is_hotel|yesno:"room,is_restaurant|yesno:table,space" }}.</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Booking Form -->
+        <div class="col-md-7">
+            <div class="card booking-form">
+                <div class="card-header bg-dark text-white">
+                    <h4 class="mb-0">
+                        {% if is_hotel %}
+                        Reserve Room
+                        {% elif is_restaurant %}
+                        Book Table
+                        {% else %}
+                        Book This Space
+                        {% endif %}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if not user.is_authenticated %}
+                        <div class="alert alert-warning">
+                            <p class="mb-0">You need to <a href="{% url 'account_login' %}?next={{ request.path }}">sign in</a> or <a href="{% url 'account_signup' %}?next={{ request.path }}">create an account</a> to book this venue.</p>
+                        </div>
+                    {% else %}
+                        <form method="post">
+                            {% csrf_token %}
+                            
+                            {% if form.errors %}
+                                <div class="alert alert-danger">
+                                    <p class="mb-0"><strong>Please correct the errors below:</strong></p>
+                                </div>
+                            {% endif %}
+                            
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <div class="form-group">
+                                        <label for="booking-date" class="form-label">
+                                            {% if is_hotel %}
+                                                Check-in Date
+                                            {% else %}
+                                                Date
+                                            {% endif %}
+                                        </label>
+                                        <input 
+                                            type="date" 
+                                            id="booking-date" 
+                                            name="booking-date" 
+                                            class="form-control" 
+                                            value="{{ selected_date|date:'Y-m-d' }}" 
+                                            required
+                                            onchange="window.location.href='?date=' + this.value"
+                                        >
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {% if has_available_slots %}
+                                <div class="mb-4">
+                                    <label class="form-label">
+                                        {% if is_hotel %}
+                                            Available Rooms
+                                        {% elif is_restaurant %}
+                                            Available Tables
+                                        {% else %}
+                                            Available Time Slots
+                                        {% endif %}
+                                    </label>
+                                    <div class="calendar-container p-3">
+                                        <div id="time-slots-container" class="row">
+                                            {% for slot in available_slots %}
+                                                <div class="col-md-{% if is_hotel %}12{% else %}4{% endif %} col-{% if is_hotel %}12{% else %}6{% endif %}">
+                                                    <div class="time-slot available mb-2" data-start-time="{{ slot.start|date:'Y-m-d H:i' }}" data-end-time="{{ slot.end|date:'Y-m-d H:i' }}" data-price="{{ slot.price }}">
+                                                        {% if is_hotel %}
+                                                            {{ slot.start|date:"d M" }} ({{ slot.start|date:"g A" }}) - {{ slot.end|date:"d M" }} ({{ slot.end|date:"g A" }})
+                                                        {% elif is_restaurant %}
+                                                            {{ slot.start|date:"g:i A" }} - {{ slot.end|date:"g:i A" }}
+                                                        {% else %}
+                                                            {{ slot.start|date:"g:i A" }} - {{ slot.end|date:"g:i A" }}
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                        
+                                        <div class="row mt-4">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label for="start_time" class="form-label">
+                                                        {% if is_hotel %}
+                                                            Check-in Time
+                                                        {% else %}
+                                                            Start Time
+                                                        {% endif %}
+                                                    </label>
+                                                    <input type="time" id="start_time" name="start_time" class="form-control" required>
+                                                    <input type="hidden" id="start_time_date" name="start_time_date" value="{{ selected_date|date:'Y-m-d' }}">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label for="end_time" class="form-label">
+                                                        {% if is_hotel %}
+                                                            Check-out Time
+                                                        {% else %}
+                                                            End Time
+                                                        {% endif %}
+                                                    </label>
+                                                    <input type="time" id="end_time" name="end_time" class="form-control" required>
+                                                    <input type="hidden" id="end_time_date" name="end_time_date" value="{{ selected_date|date:'Y-m-d' }}">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="alert alert-info mb-4">
+                                    <p class="mb-0">No time slots available for the selected date. Please try another date.</p>
+                                </div>
+                            {% endif %}
+                            
+                            <div class="mb-4">
+                                {{ form.num_guests|as_crispy_field }}
+                            </div>
+                            
+                            <div class="mb-4">
+                                {{ form.special_requests|as_crispy_field }}
+                            </div>
+                            
+                            <div class="card mb-4">
+                                <div class="card-body">
+                                    <h5 class="card-title">Booking Summary</h5>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>
+                                            {% if is_hotel %}
+                                                Room:
+                                            {% elif is_restaurant %}
+                                                Table:
+                                            {% else %}
+                                                Space:
+                                            {% endif %}
+                                        </span>
+                                        <span class="fw-bold">{{ room.name }}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Price per hour:</span>
+                                        <span>₹{{ room.price_per_hour }}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Duration:</span>
+                                        <span id="duration-display">-</span>
+                                    </div>
+                                    <hr>
+                                    <div class="d-flex justify-content-between">
+                                        <span class="fw-bold">Total Price:</span>
+                                        <span class="fw-bold" id="booking-price">₹0</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between mb-3">
+                                <div>
+                                    <p class="mb-0">Available Balance: <span class="badge bg-success">{{ user.wallet_balance }} coins</span></p>
+                                </div>
+                                <div>
+                                    <a href="{% url 'payments:wallet' %}" class="btn btn-sm btn-outline-success">Add Funds</a>
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-lg btn-primary pay-with-coins-btn" {% if not has_available_slots %}disabled{% endif %} data-amount="100">
+                                    {% if is_hotel %}
+                                        Reserve Room
+                                    {% elif is_restaurant %}
+                                        Book Table
+                                    {% else %}
+                                        Book with Coins
+                                    {% endif %}
+                                </button>
+                            </div>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const startTimeInput = document.getElementById('start_time');
+        const endTimeInput = document.getElementById('end_time');
+        const startDateInput = document.getElementById('start_time_date');
+        const endDateInput = document.getElementById('end_time_date');
+        const durationDisplay = document.getElementById('duration-display');
+        const bookingPriceDisplay = document.getElementById('booking-price');
+        const pricePerHour = {{ room.price_per_hour }};
+        const submitButton = document.querySelector('button[type="submit"]');
+        
+        // Time slot selection
+        const timeSlots = document.querySelectorAll('.time-slot');
+        timeSlots.forEach(slot => {
+            slot.addEventListener('click', function() {
+                // Remove selected class from all slots
+                timeSlots.forEach(s => s.classList.remove('selected'));
+                
+                // Add selected class to the clicked slot
+                this.classList.add('selected');
+                
+                // Get data attributes
+                const startDateTime = this.getAttribute('data-start-time').split(' ');
+                const endDateTime = this.getAttribute('data-end-time').split(' ');
+                
+                // Set the time inputs
+                if (startDateTime.length > 1) {
+                    startTimeInput.value = startDateTime[1].substring(0, 5);
+                    startDateInput.value = startDateTime[0];
+                }
+                
+                if (endDateTime.length > 1) {
+                    endTimeInput.value = endDateTime[1].substring(0, 5);
+                    endDateInput.value = endDateTime[0];
+                }
+                
+                // Trigger calculation
+                calculateDurationAndPrice();
+            });
+        });
+        
+        function calculateDurationAndPrice() {
+            if(startTimeInput.value && endTimeInput.value) {
+                // Parse time values
+                const startParts = startTimeInput.value.split(':');
+                const endParts = endTimeInput.value.split(':');
+                
+                // Create dates with the selected date
+                const startDate = new Date(startDateInput.value);
+                startDate.setHours(parseInt(startParts[0], 10), parseInt(startParts[1], 10), 0);
+                
+                const endDate = new Date(endDateInput.value);
+                endDate.setHours(parseInt(endParts[0], 10), parseInt(endParts[1], 10), 0);
+                
+                // Calculate duration in hours
+                const durationHours = (endDate - startDate) / (1000 * 60 * 60);
+                durationDisplay.textContent = durationHours.toFixed(1) + ' hours';
+                
+                // Calculate total price
+                const totalPrice = durationHours * pricePerHour;
+                bookingPriceDisplay.textContent = '₹' + totalPrice.toFixed(0);
+                
+                // Enable/disable submit button based on valid times
+                if (durationHours <= 0) {
+                    submitButton.disabled = true;
+                    alert('End time must be after start time');
+                } else {
+                    submitButton.disabled = false;
+                }
+            }
+        }
+        
+        // Form validation before submit
+        const bookingForm = document.querySelector('form');
+        if (bookingForm) {
+            bookingForm.addEventListener('submit', function(e) {
+                if (!startTimeInput.value || !endTimeInput.value) {
+                    e.preventDefault();
+                    alert('Please select a time slot');
+                    return false;
+                }
+                
+                // Check if a time slot is selected
+                if (!document.querySelector('.time-slot.selected')) {
+                    e.preventDefault();
+                    alert('Please select an available time slot');
+                    return false;
+                }
+                
+                // Get wallet balance and booking price
+                const walletBalance = parseFloat('{{ user.wallet_balance }}');
+                const priceElement = document.getElementById('booking-price');
+                const totalPrice = parseFloat(priceElement.textContent.replace('₹', ''));
+                
+                if (walletBalance < totalPrice) {
+                    e.preventDefault();
+                    alert('Insufficient balance in your wallet. Please add more coins.');
+                    return false;
+                }
+                
+                return true;
+            });
+        }
+        
+        startTimeInput.addEventListener('change', calculateDurationAndPrice);
+        endTimeInput.addEventListener('change', calculateDurationAndPrice);
+        
+        // Initialize if a slot is already selected
+        if (document.querySelector('.time-slot.selected')) {
+            calculateDurationAndPrice();
+        }
+    });
+</script>
+<style>
+    .time-slot {
+        padding: 10px;
+        border-radius: 5px;
+        background-color: #f0f8ff;
+        border: 1px solid #ccc;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.2s;
+    }
+    
+    .time-slot:hover {
+        background-color: #e0f0ff;
+        border-color: #aaa;
+    }
+    
+    .time-slot.selected {
+        background-color: #007bff;
+        color: white;
+        border-color: #0056b3;
+    }
+    
+    .calendar-container {
+        background-color: #f9f9f9;
+        border-radius: 5px;
+        border: 1px solid #eee;
+    }
+</style>
+{% endblock extra_js %}
+{% endblock %} 
